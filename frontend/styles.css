@@ -504,11 +504,11 @@ body {
 .game-container {
     background: white;
     border-radius: 20px;
-    margin: 2rem;
+    margin: 2rem auto;
     box-shadow: var(--shadow-xl);
     overflow: hidden;
-    max-width: 100%;
-    width: calc(100vw - 4rem);
+    max-width: calc(100vw - 4rem);
+    width: 100%;
 }
 
 .game-header {
@@ -518,6 +518,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .timer-display {
@@ -526,6 +527,8 @@ body {
     background: rgba(255,255,255,0.2);
     padding: 0.5rem 1rem;
     border-radius: 10px;
+    min-width: 80px;
+    text-align: center;
 }
 
 .round-display {
@@ -534,20 +537,22 @@ body {
 }
 
 .game-content {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
+    display: flex;
     min-height: 500px;
-    gap: 2rem;
 }
 
 .game-area {
+    flex: 2;
     padding: 2rem;
+    min-width: 0;
 }
 
 .scoreboard {
+    flex: 1;
     background: var(--light-color);
     padding: 2rem;
     border-left: 2px solid #e2e8f0;
+    min-width: 250px;
 }
 
 .phase {
@@ -813,8 +818,13 @@ body {
 
 @media (max-width: 768px) {
     .game-content {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+        flex-direction: column;
+    }
+    
+    .scoreboard {
+        border-left: none;
+        border-top: 2px solid #e2e8f0;
+        min-width: auto;
     }
     
     .players-grid {
@@ -836,6 +846,7 @@ body {
     
     .game-container {
         margin: 1rem;
+        max-width: calc(100vw - 2rem);
     }
     
     .game-header {
@@ -846,10 +857,5 @@ body {
     
     .timer-display {
         font-size: 1.5rem;
-    }
-    
-    .scoreboard {
-        border-left: none;
-        border-top: 2px solid #e2e8f0;
     }
 }

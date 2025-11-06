@@ -8,7 +8,18 @@
   ],
   "routes": [
     {
+      "src": "/frontend/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico))",
+      "dest": "/frontend/$1",
+      "headers": {
+        "Content-Type": "$2 === 'js' ? 'application/javascript' : $2 === 'css' ? 'text/css' : 'auto'"
+      }
+    },
+    {
       "src": "/frontend/(.*)",
+      "dest": "/frontend/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico))",
       "dest": "/frontend/$1"
     },
     {
