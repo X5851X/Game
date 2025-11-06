@@ -77,25 +77,11 @@ class SocketManager {
       if (result.success) {
         this.io.to(data.roomId).emit('statements-ready', result.gameState);
         
-        // Always show results after exactly 45 seconds
+        // Auto-timeout after 45 seconds if not all players have guessed
         setTimeout(() => {
           const currentRoom = this.roomManager.getRoom(data.roomId);
-          if (currentRoom && currentRoom.gameState) {
-            // Show results with all scores updated
-            this.io.to(data.roomId).emit('round-complete', {
-              gameState: currentRoom.gameState,
-              finalScores: currentRoom.getPlayersData().sort((a, b) => b.score - a.score)
-            });
-            
-            // After 10 seconds, move to next player
-            setTimeout(() => {
-              const gameResult = this.gameManager.nextRound(data.roomId, currentRoom);
-              if (gameResult.gameComplete) {
-                this.io.to(data.roomId).emit('game-complete', gameResult.finalScores);
-              } else {
-                this.io.to(data.roomId).emit('next-player', gameResult.gameState);
-              }
-            }, 10000);
+          if (currentRoom && currentRoom.gameState && currentRoom.gameState.phase === 'guessing') {
+            this.io.to(data.roomId).emit('round-complete', currentRoom.gameState);
           }
         }, 45000);
       }
@@ -106,13 +92,19 @@ class SocketManager {
       if (room) {
         const result = this.gameManager.submitGuess(data.roomId, socket.id, data.guess, room);
         if (result.success) {
-          // Send confirmation that guess was received (but don't reveal if correct yet)
-          socket.emit('guess-received', {
-            message: 'Tebakan Anda telah diterima!'
+          // Send immediate score update to the player who guessed
+          socket.emit('score-updated', {
+            playerId: socket.id,
+            points: result.pointsEarned,
+            newScore: result.playerScore
           });
           
-          // Send updated game state to all players (but don't show results yet)
+          // Send updated game state to all players
           this.io.to(data.roomId).emit('guess-submitted', result.gameState);
+          
+          if (result.roundComplete) {
+            // Show results immediately when all players have guessed
+            this.io.to(data.roomId).emit('round-complete', result.gameState);
             
             // After 10 seconds, move to next player
             setTimeout(() => {
@@ -140,6 +132,8 @@ class SocketManager {
         }
       }
     });
+
+
 
     socket.on('get-rooms', () => {
       socket.emit('rooms-list', this.roomManager.getAvailableRooms());

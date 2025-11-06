@@ -231,20 +231,21 @@ class GameClient {
 
         this.socket.on('guess-submitted', (gameState) => {
             this.gameState = gameState;
-            // Don't update scoreboard yet - wait for round complete
-        });
-
-        this.socket.on('guess-received', (data) => {
-            this.showToast(data.message, 'success');
-        });
-
-        this.socket.on('round-complete', (data) => {
-            this.gameState = data.gameState;
-            // Update scoreboard with final scores after 45 seconds
-            if (data.finalScores) {
-                this.gameState.players = data.finalScores;
-            }
             this.updateScoreboard();
+        });
+
+        this.socket.on('score-updated', (data) => {
+            if (data.points > 0) {
+                this.showToast(`+${data.points} poin! Total: ${data.newScore}`, 'success');
+            } else {
+                this.showToast('Tebakan salah! +0 poin', 'error');
+            }
+            // Update scoreboard immediately
+            this.updateScoreboard();
+        });
+
+        this.socket.on('round-complete', (gameState) => {
+            this.gameState = gameState;
             this.showRoundResults();
         });
 
@@ -605,15 +606,6 @@ class GameClient {
             roomId: this.currentRoom.id,
             guess: index
         });
-
-        // Show waiting message
-        const guessingTitle = document.getElementById('guessing-title');
-        if (guessingTitle) {
-            guessingTitle.innerHTML = `
-                <i class="fas fa-clock me-2 text-warning"></i>
-                Tebakan diterima! Menunggu waktu habis untuk melihat hasil...
-            `;
-        }
     }
 
     updateScoreboard() {
