@@ -5,11 +5,16 @@ const config = {
     methods: ["GET", "POST"]
   },
   cleanup: {
-    interval: 5 * 60 * 1000 // 5 minutes
+    interval: 2 * 60 * 1000 // 2 minutes - more frequent cleanup
   },
   superadmin: {
     username: 'superadmin',
     password: 'admin123'
+  },
+  limits: {
+    maxRooms: 10, // Limit concurrent rooms
+    maxPlayersPerRoom: 20,
+    gameTimeout: 10 * 60 * 1000 // 10 minutes max per game
   }
 };
 
