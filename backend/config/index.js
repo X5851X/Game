@@ -1,7 +1,7 @@
 const config = {
   port: process.env.PORT || 3001,
   cors: {
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000", "https://two-truth-one-lie-game.vercel.app"],
     methods: ["GET", "POST"]
   },
   cleanup: {
