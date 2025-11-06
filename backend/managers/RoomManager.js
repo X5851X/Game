@@ -55,12 +55,13 @@ class RoomManager {
   removePlayerFromRooms(socketId) {
     for (const [roomId, room] of this.rooms.entries()) {
       if (room.removePlayer(socketId)) {
-        // Only delete room if completely empty OR if game hasn't started and no active players
         const activePlayers = room.getActivePlayers();
+        
+        // Delete room only if:
+        // 1. Game finished AND no players left, OR
+        // 2. Game not started (waiting) AND no players left
         if (activePlayers.length === 0) {
-          // If game hasn't started, delete the room
-          // If game has started, keep room for potential reconnection
-          if (room.status === ROOM_STATUS.WAITING) {
+          if (room.status === ROOM_STATUS.FINISHED || room.status === ROOM_STATUS.WAITING) {
             this.rooms.delete(roomId);
             return null;
           }
@@ -89,8 +90,15 @@ class RoomManager {
 
   cleanupEmptyRooms() {
     for (const [roomId, room] of this.rooms.entries()) {
-      if (room.isEmpty()) {
-        this.rooms.delete(roomId);
+      const activePlayers = room.getActivePlayers();
+      
+      // Delete room only if:
+      // 1. Game finished AND no active players, OR
+      // 2. Game waiting AND no active players
+      if (activePlayers.length === 0) {
+        if (room.status === ROOM_STATUS.FINISHED || room.status === ROOM_STATUS.WAITING) {
+          this.rooms.delete(roomId);
+        }
       }
     }
   }

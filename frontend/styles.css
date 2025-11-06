@@ -329,7 +329,7 @@ body {
 /* Responsive Design */
 @media (max-width: 768px) {
     .hero-title {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
     
     .hero-subtitle {
@@ -337,16 +337,35 @@ body {
     }
     
     .login-form-card {
-        margin-top: 2rem;
-        padding: 2rem;
+        margin-top: 1rem;
+        padding: 1.5rem;
     }
     
     .page-title {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
     
     .player-form {
-        padding: 1.5rem;
+        padding: 1rem;
+    }
+    
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .room-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .room-info h4 {
+        font-size: 1rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
     }
 }
 
@@ -832,19 +851,30 @@ body {
         border-left: none;
         border-top: 2px solid #e2e8f0;
         min-width: auto;
+        padding: 1rem;
+    }
+    
+    .game-area {
+        padding: 1rem;
     }
     
     .players-grid {
         grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .player-card {
+        padding: 1rem;
     }
     
     .game-controls {
         flex-direction: column;
+        gap: 0.5rem;
     }
     
     .winners-container {
-        padding: 2rem 1rem;
-        margin: 1rem;
+        padding: 1rem;
+        margin: 0.5rem;
     }
     
     .hero-title {
@@ -852,17 +882,52 @@ body {
     }
     
     .game-container {
-        margin: 1rem;
-        max-width: calc(100vw - 2rem);
+        margin: 0.5rem;
+        max-width: calc(100vw - 1rem);
+        border-radius: 15px;
     }
     
     .game-header {
         flex-direction: column;
         gap: 1rem;
         text-align: center;
+        padding: 1rem;
     }
     
     .timer-display {
         font-size: 1.5rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .statements-container {
+        gap: 0.5rem;
+    }
+    
+    .statement-box {
+        padding: 1rem;
+    }
+    
+    .guess-option {
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .room-card {
+        margin-bottom: 1rem;
+    }
+    
+    .room-card .card-body {
+        padding: 1rem;
+    }
+    
+    .waiting-room-container {
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .btn-game {
+        padding: 0.5rem 1.5rem;
+        font-size: 0.9rem;
     }
 }
