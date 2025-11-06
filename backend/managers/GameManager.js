@@ -100,7 +100,6 @@ class GameManager {
         isWinner: index < 3 // Top 3 are winners
       }));
   }
-  }
 
   getGameState(roomId) {
     return this.activeGames.get(roomId);
