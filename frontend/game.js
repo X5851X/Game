@@ -231,21 +231,20 @@ class GameClient {
 
         this.socket.on('guess-submitted', (gameState) => {
             this.gameState = gameState;
-            this.updateScoreboard();
+            // Don't update scoreboard yet - wait for round complete
         });
 
-        this.socket.on('score-updated', (data) => {
-            if (data.points > 0) {
-                this.showToast(`+${data.points} poin! Total: ${data.newScore}`, 'success');
-            } else {
-                this.showToast('Tebakan salah! +0 poin', 'error');
+        this.socket.on('guess-received', (data) => {
+            this.showToast(data.message, 'success');
+        });
+
+        this.socket.on('round-complete', (data) => {
+            this.gameState = data.gameState;
+            // Update scoreboard with final scores after 45 seconds
+            if (data.finalScores) {
+                this.gameState.players = data.finalScores;
             }
-            // Update scoreboard immediately
             this.updateScoreboard();
-        });
-
-        this.socket.on('round-complete', (gameState) => {
-            this.gameState = gameState;
             this.showRoundResults();
         });
 
@@ -505,18 +504,19 @@ class GameClient {
                 this.startTimer(300); // Only show timer for current player
             } else {
                 document.getElementById('waiting-phase').classList.add('active');
-                document.getElementById('timer').textContent = '-'; // Hide timer for others
+                // Hide timer for waiting players
+                const timerElement = document.getElementById('timer');
+                if (timerElement) {
+                    timerElement.style.display = 'none';
+                }
             }
         } else if (phase === 'guessing') {
-            if (!isCurrentPlayer && !isSuperAdmin) {
-                this.showGuessingPhase();
-                this.startTimer(45); // Show timer for guessing players
-            } else {
-                // Current player can see but not guess
-                this.showGuessingPhase();
-                if (isCurrentPlayer) {
-                    this.startTimer(45); // Current player can see timer too
-                }
+            this.showGuessingPhase();
+            this.startTimer(45); // Show 45-second timer for all during guessing
+            // Show timer for guessing phase
+            const timerElement = document.getElementById('timer');
+            if (timerElement) {
+                timerElement.style.display = 'block';
             }
         }
 
@@ -606,7 +606,14 @@ class GameClient {
             guess: index
         });
 
-        this.showToast('Tebakan Anda telah dikirim!', 'success');
+        // Show waiting message
+        const guessingTitle = document.getElementById('guessing-title');
+        if (guessingTitle) {
+            guessingTitle.innerHTML = `
+                <i class="fas fa-clock me-2 text-warning"></i>
+                Tebakan diterima! Menunggu waktu habis untuk melihat hasil...
+            `;
+        }
     }
 
     updateScoreboard() {
@@ -712,35 +719,64 @@ class GameClient {
         this.showPage('final-page');
         
         const finalScoresContainer = document.getElementById('final-scores');
-        const winners = finalScores.filter(player => player.isWinner);
-        const others = finalScores.filter(player => !player.isWinner);
+        const topThree = finalScores.slice(0, 3);
+        const others = finalScores.slice(3);
         
         let html = '';
         
-        // Show winners podium
-        if (winners.length > 0) {
-            html += '<div class="winners-section mb-5">';
-            html += '<h3 class="text-center text-warning mb-4"><i class="fas fa-crown me-2"></i>Pemenang</h3>';
-            html += '<div class="row justify-content-center">';
+        // Show podium with 2-1-3 layout
+        if (topThree.length > 0) {
+            html += '<div class="podium-container mb-5">';
+            html += '<div class="podium-stage">';
             
-            winners.forEach((player, index) => {
-                const medalIcon = index === 0 ? 'fa-trophy text-warning' : 
-                                index === 1 ? 'fa-medal text-secondary' : 'fa-award text-warning';
-                const medalColor = index === 0 ? 'warning' : index === 1 ? 'secondary' : 'warning';
-                
+            // Position 2 (left)
+            if (topThree[1]) {
                 html += `
-                    <div class="col-md-4 mb-3">
-                        <div class="winner-card text-center p-4 bg-light rounded">
-                            <i class="fas ${medalIcon} fa-3x mb-3"></i>
-                            <h4 class="text-${medalColor}">#${player.rank}</h4>
-                            <h5 class="mb-2">${player.username}</h5>
-                            <div class="score-badge bg-${medalColor} text-white px-3 py-2 rounded-pill">
-                                ${player.score} pts
-                            </div>
+                    <div class="podium-position second-place">
+                        <div class="podium-player">
+                            <div class="player-avatar silver">${topThree[1].username.substring(0, 2).toUpperCase()}</div>
+                            <h4 class="player-name">${topThree[1].username}</h4>
+                            <div class="player-score">${topThree[1].score} pts</div>
+                        </div>
+                        <div class="podium-base second">
+                            <div class="podium-number">2</div>
                         </div>
                     </div>
                 `;
-            });
+            }
+            
+            // Position 1 (center)
+            if (topThree[0]) {
+                html += `
+                    <div class="podium-position first-place">
+                        <div class="podium-player">
+                            <div class="crown">👑</div>
+                            <div class="player-avatar gold">${topThree[0].username.substring(0, 2).toUpperCase()}</div>
+                            <h4 class="player-name">${topThree[0].username}</h4>
+                            <div class="player-score">${topThree[0].score} pts</div>
+                        </div>
+                        <div class="podium-base first">
+                            <div class="podium-number">1</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Position 3 (right)
+            if (topThree[2]) {
+                html += `
+                    <div class="podium-position third-place">
+                        <div class="podium-player">
+                            <div class="player-avatar bronze">${topThree[2].username.substring(0, 2).toUpperCase()}</div>
+                            <h4 class="player-name">${topThree[2].username}</h4>
+                            <div class="player-score">${topThree[2].score} pts</div>
+                        </div>
+                        <div class="podium-base third">
+                            <div class="podium-number">3</div>
+                        </div>
+                    </div>
+                `;
+            }
             
             html += '</div></div>';
         }
@@ -768,33 +804,59 @@ class GameClient {
         
         finalScoresContainer.innerHTML = html;
         
-        // Add confetti effect for winners
-        if (winners.length > 0) {
+        // Add confetti effect
+        setTimeout(() => {
             this.showConfetti();
-        }
+        }, 500);
     }
 
     showConfetti() {
-        // Simple confetti effect using CSS animations
-        const colors = ['#667eea', '#764ba2', '#48bb78', '#ed8936', '#e53e3e'];
+        // Enhanced confetti effect
+        const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
+        const shapes = ['circle', 'square', 'triangle'];
         
-        for (let i = 0; i < 50; i++) {
-            const confetti = document.createElement('div');
-            confetti.style.position = 'fixed';
-            confetti.style.width = '10px';
-            confetti.style.height = '10px';
-            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            confetti.style.left = Math.random() * 100 + 'vw';
-            confetti.style.top = '-10px';
-            confetti.style.zIndex = '10000';
-            confetti.style.borderRadius = '50%';
-            confetti.style.animation = `confetti-fall ${Math.random() * 3 + 2}s linear forwards`;
-            
-            document.body.appendChild(confetti);
-            
+        // Create multiple waves of confetti
+        for (let wave = 0; wave < 3; wave++) {
             setTimeout(() => {
-                confetti.remove();
-            }, 5000);
+                for (let i = 0; i < 30; i++) {
+                    const confetti = document.createElement('div');
+                    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const size = Math.random() * 8 + 6;
+                    
+                    confetti.style.position = 'fixed';
+                    confetti.style.width = size + 'px';
+                    confetti.style.height = size + 'px';
+                    confetti.style.backgroundColor = color;
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.top = '-20px';
+                    confetti.style.zIndex = '10000';
+                    confetti.style.pointerEvents = 'none';
+                    
+                    if (shape === 'circle') {
+                        confetti.style.borderRadius = '50%';
+                    } else if (shape === 'triangle') {
+                        confetti.style.width = '0';
+                        confetti.style.height = '0';
+                        confetti.style.backgroundColor = 'transparent';
+                        confetti.style.borderLeft = size/2 + 'px solid transparent';
+                        confetti.style.borderRight = size/2 + 'px solid transparent';
+                        confetti.style.borderBottom = size + 'px solid ' + color;
+                    }
+                    
+                    const duration = Math.random() * 3 + 2;
+                    const delay = Math.random() * 0.5;
+                    confetti.style.animation = `confetti-fall ${duration}s linear ${delay}s forwards`;
+                    
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        if (confetti.parentNode) {
+                            confetti.remove();
+                        }
+                    }, (duration + delay) * 1000 + 500);
+                }
+            }, wave * 500);
         }
         
         // Add CSS animation if not exists
@@ -803,8 +865,13 @@ class GameClient {
             style.id = 'confetti-style';
             style.textContent = `
                 @keyframes confetti-fall {
-                    to {
-                        transform: translateY(100vh) rotate(360deg);
+                    0% {
+                        transform: translateY(-20px) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) rotate(720deg);
+                        opacity: 0;
                     }
                 }
             `;
@@ -818,13 +885,22 @@ class GameClient {
         let timeLeft = seconds;
         const timerElement = document.getElementById('timer');
         
-        this.timer = setInterval(() => {
+        if (timerElement) {
+            timerElement.style.display = 'block';
             timerElement.textContent = timeLeft;
+        }
+        
+        this.timer = setInterval(() => {
             timeLeft--;
+            if (timerElement) {
+                timerElement.textContent = timeLeft;
+            }
             
             if (timeLeft < 0) {
                 clearInterval(this.timer);
-                timerElement.textContent = '0';
+                if (timerElement) {
+                    timerElement.textContent = '0';
+                }
             }
         }, 1000);
     }

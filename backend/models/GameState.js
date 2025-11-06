@@ -9,12 +9,25 @@ class GameState {
     
     // Select random player who hasn't played yet
     const unplayedPlayers = activePlayers.filter(p => !p.hasPlayed);
+    console.log('Active players:', activePlayers.map(p => ({ username: p.username, hasPlayed: p.hasPlayed })));
+    console.log('Unplayed players:', unplayedPlayers.map(p => p.username));
+    
     if (unplayedPlayers.length > 0) {
       const randomIndex = Math.floor(Math.random() * unplayedPlayers.length);
-      this.currentPlayer = unplayedPlayers[randomIndex];
+      this.currentPlayer = {
+        id: unplayedPlayers[randomIndex].id,
+        username: unplayedPlayers[randomIndex].username,
+        isHost: unplayedPlayers[randomIndex].isHost,
+        isSuperAdmin: unplayedPlayers[randomIndex].isSuperAdmin
+      };
     } else {
       // All players have played, game should end
-      this.currentPlayer = activePlayers[0];
+      this.currentPlayer = {
+        id: activePlayers[0].id,
+        username: activePlayers[0].username,
+        isHost: activePlayers[0].isHost,
+        isSuperAdmin: activePlayers[0].isSuperAdmin
+      };
     }
     
     this.round = room.currentRound + 1;

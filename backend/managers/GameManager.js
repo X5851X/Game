@@ -22,19 +22,16 @@ class GameManager {
     return { success: true, gameState };
   }
 
-  submitStatements(roomId, statements) {
+  submitStatements(roomId, statements, room) {
     const gameState = this.activeGames.get(roomId);
     if (!gameState) {
       return { success: false, message: 'Game not found' };
     }
 
     // Mark current player as having played
-    const room = this.getRoomById(roomId);
-    if (room) {
-      const player = room.getPlayer(gameState.currentPlayer.id);
-      if (player) {
-        player.hasPlayed = true;
-      }
+    const player = room.getPlayer(gameState.currentPlayer.id);
+    if (player) {
+      player.hasPlayed = true;
     }
 
     // Shuffle statements to prevent pattern recognition
