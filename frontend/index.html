@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two Truth One Lie Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Halaman Awal -->
+    <div id="home-page" class="page active">
+        <div class="hero-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-6 text-center">
+                        <div class="hero-content">
+                            <i class="fas fa-mask hero-icon"></i>
+                            <h1 class="hero-title">Two Truth One Lie</h1>
+                            <p class="hero-subtitle">Uji kemampuan menebak kebohongan teman-temanmu!</p>
+                            
+                            <div class="player-form mt-5">
+                                <div class="input-group input-group-lg mb-4">
+                                    <span class="input-group-text bg-white"><i class="fas fa-user text-primary"></i></span>
+                                    <input type="text" class="form-control" id="username-input" 
+                                           placeholder="Masukkan nickname Anda" maxlength="20">
+                                </div>
+                                <button class="btn btn-primary btn-lg w-100 mb-3" id="continue-btn">
+                                    <i class="fas fa-play me-2"></i>Mulai Bermain
+                                </button>
+                            </div>
+                            
+                            <div class="admin-access mt-4">
+                                <button class="btn btn-outline-light btn-sm" id="admin-login-btn">
+                                    <i class="fas fa-shield-alt me-2"></i>Admin Access
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Halaman Login Admin -->
+    <div id="admin-login-page" class="page">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <div class="login-form-card admin-form">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-shield-alt login-icon text-danger"></i>
+                            <h2 class="login-title text-danger">Login SuperAdmin</h2>
+                            <p class="text-muted">Akses khusus untuk administrator</p>
+                        </div>
+                        
+                        <form class="login-form">
+                            <div class="mb-3">
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="text" class="form-control" id="admin-username" 
+                                           value="superadmin" readonly>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="admin-password" 
+                                           placeholder="Password">
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-danger btn-lg" id="admin-continue-btn">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="back-to-home-admin-btn">
+                                    <i class="fas fa-arrow-left me-2"></i>Kembali
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman Room -->
+    <div id="room-page" class="page">
+        <div class="container py-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="page-header text-center mb-5">
+                        <h2 class="page-title"><i class="fas fa-door-open me-2"></i>Pilih Room</h2>
+                        <p class="text-muted">Buat room baru atau bergabung dengan room yang tersedia</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- Buat Room -->
+                <div class="col-lg-6">
+                    <div class="room-card create-room-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-plus-circle me-2"></i>Buat Room Baru</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group input-group-lg mb-3">
+                                <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                <input type="text" class="form-control" id="room-name-input" 
+                                       placeholder="Nama Room" maxlength="30">
+                            </div>
+                            <button class="btn btn-success btn-lg w-100" id="create-room-btn">
+                                <i class="fas fa-rocket me-2"></i>Buat Room
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Join Room -->
+                <div class="col-lg-6">
+                    <div class="room-card join-room-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3><i class="fas fa-users me-2"></i>Room Tersedia</h3>
+                            <button class="btn btn-outline-primary btn-sm" id="refresh-rooms-btn">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="rooms-list" class="rooms-container">
+                                <div class="loading-spinner text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Memuat room...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman SuperAdmin -->
+    <div id="admin-page" class="page">
+        <div class="container">
+            <h2>SuperAdmin Panel</h2>
+            <div class="admin-section">
+                <h3>Semua Room</h3>
+                <div id="admin-rooms-list">
+                    <p>Memuat room...</p>
+                </div>
+                <button id="admin-refresh-btn">Refresh</button>
+            </div>
+            <button id="admin-logout-btn">Logout</button>
+        </div>
+    </div>
+
+    <!-- Halaman Waiting Room -->
+    <div id="waiting-page" class="page">
+        <div class="hero-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="waiting-room-container">
+                            <div class="room-header">
+                                <div class="room-name" id="room-title">Room: Loading...</div>
+                                <div class="room-status">
+                                    <i class="fas fa-clock me-2"></i>Menunggu pemain lain...
+                                </div>
+                            </div>
+                            
+                            <div class="players-section">
+                                <h3 class="text-center mb-4">
+                                    <i class="fas fa-users me-2 text-primary"></i>Pemain di Room
+                                </h3>
+                                <div id="players-list" class="players-grid"></div>
+                            </div>
+                            
+                            <div class="game-controls">
+                                <button id="start-game-btn" class="btn btn-success btn-game" style="display: none;">
+                                    <i class="fas fa-play me-2"></i>Mulai Permainan
+                                </button>
+                                <button id="leave-room-btn" class="btn btn-outline-danger btn-game">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Keluar Room
+                                </button>
+                            </div>
+                            
+                            <div id="admin-controls" class="mt-4 text-center" style="display: none;">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    <strong>Mode: SuperAdmin (Observer)</strong>
+                                </div>
+                                <div class="admin-buttons">
+                                    <button id="skip-player-btn" class="btn btn-warning btn-sm me-2" style="display: none;">
+                                        <i class="fas fa-forward me-1"></i>Skip Player
+                                    </button>
+                                    <button id="force-leave-btn" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-sign-out-alt me-1"></i>Leave Room
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman Permainan -->
+    <div id="game-page" class="page">
+        <div class="game-container">
+            <div class="game-header">
+                <div class="timer-display" id="timer">45</div>
+                <div class="round-display" id="round-info">Round 1 of 4</div>
+            </div>
+            
+            <div class="game-content">
+                <div class="game-area">
+                    <!-- Writing Phase -->
+                    <div id="writing-phase" class="phase">
+                        <h3 id="writing-title" class="text-center mb-4">
+                            <i class="fas fa-pen me-2 text-primary"></i>Giliran Anda Menulis!
+                        </h3>
+                        <div class="statements-container">
+                            <div class="statement-box truth">
+                                <label><i class="fas fa-check-circle text-success me-2"></i>Kebenaran 1:</label>
+                                <input type="text" id="truth1" maxlength="100" placeholder="Tulis sesuatu yang benar tentang diri Anda...">
+                            </div>
+                            <div class="statement-box truth">
+                                <label><i class="fas fa-check-circle text-success me-2"></i>Kebenaran 2:</label>
+                                <input type="text" id="truth2" maxlength="100" placeholder="Tulis kebenaran lainnya...">
+                            </div>
+                            <div class="statement-box lie">
+                                <label><i class="fas fa-times-circle text-danger me-2"></i>Kebohongan:</label>
+                                <input type="text" id="lie" maxlength="100" placeholder="Tulis sesuatu yang tidak benar...">
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <button id="submit-statements-btn" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Kirim Pernyataan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Waiting Phase -->
+                    <div id="waiting-phase" class="phase text-center">
+                        <h3><i class="fas fa-hourglass-half me-2 text-warning"></i>Menunggu pemain lain...</h3>
+                        <div class="loading mt-4">
+                            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+                            <p class="mt-3 text-muted">Sabar ya, pemain lain sedang menulis...</p>
+                        </div>
+                    </div>
+
+                    <!-- Guessing Phase -->
+                    <div id="guessing-phase" class="phase">
+                        <h3 id="guessing-title" class="text-center mb-4">
+                            <i class="fas fa-search me-2 text-warning"></i>Tebak mana yang bohong!
+                        </h3>
+                        <div id="statements-to-guess"></div>
+                    </div>
+
+                    <!-- Results Phase -->
+                    <div id="results-phase" class="phase">
+                        <h3 class="text-center mb-4">
+                            <i class="fas fa-trophy me-2 text-warning"></i>Hasil Round
+                        </h3>
+                        <div id="round-results"></div>
+                    </div>
+                </div>
+
+                <!-- Scoreboard -->
+                <div class="scoreboard">
+                    <h3 class="text-center mb-4">
+                        <i class="fas fa-medal me-2 text-warning"></i>Ranking
+                    </h3>
+                    <div id="scores-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halaman Final -->
+    <div id="final-page" class="page">
+        <div class="container">
+            <h2>Permainan Selesai!</h2>
+            <div id="final-scores"></div>
+            <button id="back-to-rooms-btn">Kembali ke Room</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
