@@ -1,6 +1,6 @@
 class GameClient {
     constructor() {
-        this.socket = io('http://localhost:3001');
+        this.socket = io('https://game-production-8b3d.up.railway.app');
         this.username = '';
         this.currentRoom = null;
         this.gameState = null;
