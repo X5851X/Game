@@ -193,6 +193,7 @@ class GameClient {
         this.socket.on('guess-submitted', (gameState) => {
             this.gameState = gameState;
             this.updateScoreboard();
+            this.showToast('Tebakan diterima!', 'success');
         });
 
         this.socket.on('round-complete', (gameState) => {
@@ -498,12 +499,23 @@ class GameClient {
 
     showGuessingPhase() {
         document.getElementById('guessing-phase').classList.add('active');
-        document.getElementById('guessing-title').textContent = 
-            `Tebak mana yang bohong dari ${this.gameState.currentPlayer.username}!`;
+        
+        const isCurrentPlayer = this.gameState.currentPlayer.username === this.username;
+        const currentUserPlayer = this.gameState.players.find(p => p.username === this.username);
+        const isSuperAdmin = currentUserPlayer?.isSuperAdmin;
+        
+        if (isCurrentPlayer && !isSuperAdmin) {
+            document.getElementById('guessing-title').textContent = 
+                'Pernyataan Anda sedang ditebak oleh pemain lain!';
+        } else {
+            document.getElementById('guessing-title').textContent = 
+                `Tebak mana yang bohong dari ${this.gameState.currentPlayer.username}!`;
+        }
 
         const statementsContainer = document.getElementById('statements-to-guess');
         statementsContainer.innerHTML = this.gameState.statements.statements.map((statement, index) => `
-            <div class="guess-option" onclick="gameClient.selectGuess(${index})">
+            <div class="guess-option ${isCurrentPlayer && !isSuperAdmin ? 'disabled' : ''}" 
+                 ${!isCurrentPlayer && !isSuperAdmin ? `onclick="gameClient.selectGuess(${index})"` : ''}>
                 <div class="statement-text">${statement}</div>
                 <div class="guess-indicator" style="display: none;">
                     <i class="fas fa-check-circle text-success"></i>

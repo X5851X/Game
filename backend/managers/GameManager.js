@@ -61,32 +61,23 @@ class GameManager {
       player.addScore(points);
     }
 
+    // Update gameState with current room data
+    gameState.players = room.getPlayersData();
+
     const allGuessed = gameState.allPlayersGuessed(room);
     let roundComplete = false;
     let gameComplete = false;
 
     if (allGuessed) {
       roundComplete = true;
-      room.currentRound++;
-      
-      const activePlayers = room.getActivePlayers();
-      if (room.currentRound >= activePlayers.length) {
-        gameComplete = true;
-        room.status = ROOM_STATUS.FINISHED;
-        this.activeGames.delete(roomId);
-      } else {
-        const newGameState = new GameState(room);
-        this.activeGames.set(roomId, newGameState);
-        room.gameState = newGameState;
-      }
+      // Don't increment round here, do it in nextRound method
     }
 
     return {
       success: true,
       gameState,
       roundComplete,
-      gameComplete,
-      finalScores: gameComplete ? this.getFinalScores(room) : null
+      gameComplete: false
     };
   }
 

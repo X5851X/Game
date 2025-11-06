@@ -88,11 +88,12 @@ class SocketManager {
             
             // After 10 seconds, move to next player
             setTimeout(() => {
-              if (result.gameComplete) {
-                this.io.to(data.roomId).emit('game-complete', result.finalScores);
-                // Reset room status to waiting
-                const room = this.roomManager.getRoom(data.roomId);
-                if (room) {
+              const room = this.roomManager.getRoom(data.roomId);
+              if (room) {
+                const gameResult = this.gameManager.nextRound(data.roomId, room);
+                if (gameResult.gameComplete) {
+                  this.io.to(data.roomId).emit('game-complete', gameResult.finalScores);
+                  // Reset room status to waiting
                   room.status = 'waiting';
                   room.currentRound = 0;
                   room.gameState = null;
@@ -101,10 +102,10 @@ class SocketManager {
                       player.score = 0;
                     }
                   });
+                } else {
+                  // Move to next player
+                  this.io.to(data.roomId).emit('next-player', gameResult.gameState);
                 }
-              } else {
-                // Move to next player
-                this.io.to(data.roomId).emit('next-player', result.gameState);
               }
             }, 10000);
           }
@@ -184,6 +185,8 @@ class SocketManager {
         }
         this.playerSockets.delete(socket.id);
         socket.emit('left-game-confirmed');
+        // Update room list for all clients
+        this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
       }
     });
 
