@@ -4,7 +4,8 @@
   "description": "Frontend for Truth and Lie Game",
   "main": "index.html",
   "scripts": {
-    "start": "live-server --port=3000"
+    "start": "live-server --port=3000",
+    "build": "mkdir -p dist && cp -r *.html *.css *.js dist/"
   },
   "dependencies": {
     "socket.io-client": "^4.7.2"
