@@ -28,10 +28,39 @@ class GameManager {
       return { success: false, message: 'Game not found' };
     }
 
+    // Mark current player as having played
+    const room = this.getRoomById(roomId);
+    if (room) {
+      const player = room.getPlayer(gameState.currentPlayer.id);
+      if (player) {
+        player.hasPlayed = true;
+      }
+    }
+
     // Shuffle statements to prevent pattern recognition
     const shuffledData = this.shuffleStatements(statements.statements, statements.lieIndex);
     gameState.setStatements(shuffledData.statements, shuffledData.lieIndex);
     return { success: true, gameState };
+  }
+
+  getRoomById(roomId) {
+    // This should be injected or accessed through room manager
+    return null; // Will be fixed in socket manager
+  }
+
+  skipCurrentPlayer(roomId, room) {
+    const gameState = this.activeGames.get(roomId);
+    if (!gameState) {
+      return { success: false, message: 'Game not found' };
+    }
+
+    // Mark current player as having played (skipped)
+    const player = room.getPlayer(gameState.currentPlayer.id);
+    if (player) {
+      player.hasPlayed = true;
+    }
+
+    return this.nextRound(roomId, room);
   }
 
   shuffleStatements(statements, originalLieIndex) {
@@ -77,7 +106,9 @@ class GameManager {
       success: true,
       gameState,
       roundComplete,
-      gameComplete: false
+      gameComplete: false,
+      pointsEarned: points,
+      playerScore: player ? player.score : 0
     };
   }
 
@@ -132,8 +163,11 @@ class GameManager {
     room.currentRound++;
     const activePlayers = room.getActivePlayers();
     
-    if (room.currentRound >= activePlayers.length) {
-      // Game complete
+    // Check if all players have played
+    const unplayedPlayers = activePlayers.filter(p => !p.hasPlayed);
+    
+    if (unplayedPlayers.length === 0) {
+      // Game complete - all players have had their turn
       room.status = 'finished';
       this.activeGames.delete(roomId);
       return {
@@ -141,7 +175,7 @@ class GameManager {
         finalScores: this.getFinalScores(room)
       };
     } else {
-      // Next round
+      // Next round with random unplayed player
       const newGameState = new GameState(room);
       this.activeGames.set(roomId, newGameState);
       room.gameState = newGameState;

@@ -46,6 +46,22 @@ class SocketManager {
         const result = this.gameManager.startGame(room);
         if (result.success) {
           this.io.to(roomId).emit('game-started', result.gameState);
+          
+          // Start 300-second timeout for writing
+          setTimeout(() => {
+            const currentRoom = this.roomManager.getRoom(roomId);
+            if (currentRoom && currentRoom.gameState && currentRoom.gameState.phase === 'writing') {
+              // Skip current player if they haven't submitted
+              const skipResult = this.gameManager.skipCurrentPlayer(roomId, currentRoom);
+              if (skipResult.success) {
+                if (skipResult.gameComplete) {
+                  this.io.to(roomId).emit('game-complete', skipResult.finalScores);
+                } else {
+                  this.io.to(roomId).emit('player-skipped', skipResult.gameState);
+                }
+              }
+            }
+          }, 300000); // 5 minutes
         }
       }
     });
@@ -80,6 +96,14 @@ class SocketManager {
       if (room) {
         const result = this.gameManager.submitGuess(data.roomId, socket.id, data.guess, room);
         if (result.success) {
+          // Send immediate score update to the player who guessed
+          socket.emit('score-updated', {
+            playerId: socket.id,
+            points: result.pointsEarned,
+            newScore: result.playerScore
+          });
+          
+          // Send updated game state to all players
           this.io.to(data.roomId).emit('guess-submitted', result.gameState);
           
           if (result.roundComplete) {

@@ -6,7 +6,17 @@ class GameState {
     this.roomId = room.id;
     this.phase = GAME_PHASES.WRITING;
     const activePlayers = room.getActivePlayers();
-    this.currentPlayer = activePlayers[room.currentRound % activePlayers.length];
+    
+    // Select random player who hasn't played yet
+    const unplayedPlayers = activePlayers.filter(p => !p.hasPlayed);
+    if (unplayedPlayers.length > 0) {
+      const randomIndex = Math.floor(Math.random() * unplayedPlayers.length);
+      this.currentPlayer = unplayedPlayers[randomIndex];
+    } else {
+      // All players have played, game should end
+      this.currentPlayer = activePlayers[0];
+    }
+    
     this.round = room.currentRound + 1;
     this.totalRounds = activePlayers.length;
     this.players = room.getPlayersData();

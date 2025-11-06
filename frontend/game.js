@@ -16,13 +16,51 @@ class GameClient {
     initializeRouting() {
         // Handle browser back/forward buttons
         window.addEventListener('popstate', (e) => {
-            if (e.state && e.state.page) {
-                this.showPage(e.state.page);
+            // Always redirect to home page when back button is pressed
+            this.handleBackNavigation();
+        });
+        
+        // Prevent back button during game
+        window.addEventListener('beforeunload', (e) => {
+            if (this.currentRoom && this.gameState) {
+                e.preventDefault();
+                e.returnValue = 'Anda sedang dalam permainan. Yakin ingin keluar?';
             }
         });
         
         // Set initial state
         history.replaceState({ page: 'home-page' }, '', '/');
+    }
+
+    handleBackNavigation() {
+        // Always go to home page when back button is pressed
+        this.resetToHome();
+    }
+
+    resetToHome() {
+        // Disconnect from current room if any
+        if (this.currentRoom) {
+            this.socket.emit('leave-room', { roomId: this.currentRoom.id });
+        }
+        
+        // Reset all game state
+        this.currentRoom = null;
+        this.gameState = null;
+        this.username = '';
+        this.isSuperAdmin = false;
+        
+        // Clear any timers
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        
+        // Go to home page
+        this.showPage('home-page');
+        
+        // Clear input fields
+        document.getElementById('username-input').value = '';
+        document.getElementById('room-name-input').value = '';
     }
 
     updateURL(path, page) {
@@ -165,6 +203,7 @@ class GameClient {
             if (this.currentRoom) {
                 this.currentRoom.players = players;
                 this.updatePlayersList();
+                this.updateHostControls();
             }
         });
 
@@ -193,7 +232,16 @@ class GameClient {
         this.socket.on('guess-submitted', (gameState) => {
             this.gameState = gameState;
             this.updateScoreboard();
-            this.showToast('Tebakan diterima!', 'success');
+        });
+
+        this.socket.on('score-updated', (data) => {
+            if (data.points > 0) {
+                this.showToast(`+${data.points} poin! Total: ${data.newScore}`, 'success');
+            } else {
+                this.showToast('Tebakan salah! +0 poin', 'error');
+            }
+            // Update scoreboard immediately
+            this.updateScoreboard();
         });
 
         this.socket.on('round-complete', (gameState) => {
@@ -259,10 +307,12 @@ class GameClient {
         });
         document.getElementById(pageId).classList.add('active');
         
-        // Update URL based on page
+        // Update URL and push state to prevent back navigation issues
         switch(pageId) {
             case 'home-page':
                 this.updateURL('/', pageId);
+                // Push extra state to prevent going back
+                history.pushState({ page: 'home-page' }, '', '/');
                 break;
             case 'room-page':
                 this.updateURL('/rooms', pageId);
@@ -272,6 +322,9 @@ class GameClient {
                 break;
             case 'game-page':
                 this.updateURL('/game/' + (this.currentRoom?.name || 'playing'), pageId);
+                // Push extra states to prevent back navigation during game
+                history.pushState({ page: 'game-page', preventBack: true }, '', window.location.pathname);
+                history.pushState({ page: 'game-page', preventBack: true }, '', window.location.pathname);
                 break;
             case 'admin-page':
                 this.updateURL('/admin', pageId);
@@ -378,7 +431,11 @@ class GameClient {
     showWaitingRoom() {
         document.getElementById('room-title').textContent = `Room: ${this.currentRoom.name}`;
         this.updatePlayersList();
-        
+        this.updateHostControls();
+        this.showPage('waiting-page');
+    }
+
+    updateHostControls() {
         const currentPlayer = this.currentRoom.players.find(p => p.username === this.username);
         const isHost = currentPlayer?.isHost;
         const isSuperAdmin = currentPlayer?.isSuperAdmin;
@@ -392,8 +449,6 @@ class GameClient {
         } else {
             document.getElementById('leave-room-btn').style.display = 'block';
         }
-        
-        this.showPage('waiting-page');
     }
 
     updatePlayersList() {
@@ -447,17 +502,22 @@ class GameClient {
             if (isCurrentPlayer && !isSuperAdmin) {
                 document.getElementById('writing-phase').classList.add('active');
                 document.getElementById('writing-title').textContent = 'Giliran Anda Menulis!';
+                this.startTimer(300); // Only show timer for current player
             } else {
                 document.getElementById('waiting-phase').classList.add('active');
+                document.getElementById('timer').textContent = '-'; // Hide timer for others
             }
-            this.startTimer(300);
         } else if (phase === 'guessing') {
             if (!isCurrentPlayer && !isSuperAdmin) {
                 this.showGuessingPhase();
+                this.startTimer(45); // Show timer for guessing players
             } else {
-                document.getElementById('waiting-phase').classList.add('active');
+                // Current player can see but not guess
+                this.showGuessingPhase();
+                if (isCurrentPlayer) {
+                    this.startTimer(45); // Current player can see timer too
+                }
             }
-            this.startTimer(45);
         }
 
         this.updateScoreboard();
@@ -553,12 +613,21 @@ class GameClient {
         const scoresList = document.getElementById('scores-list');
         const sortedPlayers = [...this.gameState.players].sort((a, b) => b.score - a.score);
         
-        scoresList.innerHTML = sortedPlayers.map(player => `
-            <div class="score-item ${player.username === this.gameState.currentPlayer.username ? 'current-player' : ''}">
-                <span>${player.username}</span>
-                <span>${player.score} pts</span>
-            </div>
-        `).join('');
+        scoresList.innerHTML = sortedPlayers.map((player, index) => {
+            const isCurrentPlayer = player.username === this.gameState.currentPlayer.username;
+            const isMyself = player.username === this.username;
+            const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+            
+            return `
+                <div class="score-item ${isCurrentPlayer ? 'current-player' : ''} ${isMyself ? 'my-score' : ''}">
+                    <div class="player-info">
+                        <span class="rank">${rankIcon}</span>
+                        <span class="username">${player.username}</span>
+                    </div>
+                    <span class="score">${player.score} pts</span>
+                </div>
+            `;
+        }).join('');
     }
 
     showRoundResults() {

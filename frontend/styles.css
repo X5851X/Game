@@ -663,6 +663,33 @@ body {
     background: rgba(102, 126, 234, 0.1);
 }
 
+.score-item.my-score {
+    border-color: var(--success-color);
+    background: rgba(72, 187, 120, 0.1);
+    font-weight: 600;
+}
+
+.score-item .player-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.score-item .rank {
+    font-weight: 700;
+    min-width: 30px;
+    text-align: center;
+}
+
+.score-item .username {
+    flex-grow: 1;
+}
+
+.score-item .score {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
 /* Winners Page Styles */
 .winners-container {
     background: white;
