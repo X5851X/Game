@@ -14,6 +14,8 @@ class SocketManager {
         socket.join(result.room.id);
         this.playerSockets.set(socket.id, result.room.id);
         socket.emit('room-created', result.room);
+        // Broadcast new room to all clients
+        this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
       } else {
         socket.emit('create-error', result.message);
       }
@@ -27,6 +29,8 @@ class SocketManager {
         this.playerSockets.set(socket.id, data.roomId);
         socket.emit('room-joined', result.room);
         this.io.to(data.roomId).emit('player-joined', result.room.getPlayersData());
+        // Update room list for all clients
+        this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
       } else {
         socket.emit('join-error', result.message);
       }
@@ -50,6 +54,24 @@ class SocketManager {
       const result = this.gameManager.submitStatements(data.roomId, data.statements);
       if (result.success) {
         this.io.to(data.roomId).emit('statements-ready', result.gameState);
+        
+        // Auto-timeout after 45 seconds if not all players have guessed
+        setTimeout(() => {
+          const room = this.roomManager.getRoom(data.roomId);
+          if (room && room.gameState && room.gameState.phase === 'guessing') {
+            this.io.to(data.roomId).emit('round-complete', room.gameState);
+            
+            // After 10 seconds, move to next player
+            setTimeout(() => {
+              const gameResult = this.gameManager.nextRound(data.roomId, room);
+              if (gameResult.gameComplete) {
+                this.io.to(data.roomId).emit('game-complete', gameResult.finalScores);
+              } else {
+                this.io.to(data.roomId).emit('next-player', gameResult.gameState);
+              }
+            }, 10000);
+          }
+        }, 45000);
       }
     });
 
@@ -61,19 +83,30 @@ class SocketManager {
           this.io.to(data.roomId).emit('guess-submitted', result.gameState);
           
           if (result.roundComplete) {
+            // Show results immediately when all players have guessed
+            this.io.to(data.roomId).emit('round-complete', result.gameState);
+            
+            // After 10 seconds, move to next player
             setTimeout(() => {
-              this.io.to(data.roomId).emit('round-complete', result.gameState);
-            }, 2000);
-          }
-          
-          if (result.gameComplete) {
-            setTimeout(() => {
-              this.io.to(data.roomId).emit('game-complete', result.finalScores);
-              // Delete room after game is complete
-              setTimeout(() => {
-                this.roomManager.deleteRoom(data.roomId);
-              }, 10000); // Delete room 10 seconds after game ends
-            }, 4000);
+              if (result.gameComplete) {
+                this.io.to(data.roomId).emit('game-complete', result.finalScores);
+                // Reset room status to waiting
+                const room = this.roomManager.getRoom(data.roomId);
+                if (room) {
+                  room.status = 'waiting';
+                  room.currentRound = 0;
+                  room.gameState = null;
+                  room.players.forEach(player => {
+                    if (!player.isSuperAdmin) {
+                      player.score = 0;
+                    }
+                  });
+                }
+              } else {
+                // Move to next player
+                this.io.to(data.roomId).emit('next-player', result.gameState);
+              }
+            }, 10000);
           }
         }
       }
@@ -136,6 +169,21 @@ class SocketManager {
           this.io.to(roomId).emit('player-joined', room.getPlayersData());
         }
         this.playerSockets.delete(socket.id);
+        // Update room list for all clients
+        this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
+      }
+    });
+
+    socket.on('confirm-leave-game', (data) => {
+      const roomId = this.playerSockets.get(socket.id);
+      if (roomId) {
+        socket.leave(roomId);
+        const room = this.roomManager.removePlayerFromRooms(socket.id);
+        if (room) {
+          this.io.to(roomId).emit('player-joined', room.getPlayersData());
+        }
+        this.playerSockets.delete(socket.id);
+        socket.emit('left-game-confirmed');
       }
     });
 
@@ -153,6 +201,8 @@ class SocketManager {
         this.io.to(roomId).emit('player-joined', room.getPlayersData());
       }
       this.playerSockets.delete(socketId);
+      // Update room list for all clients
+      this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
     }
   }
 }

@@ -28,8 +28,25 @@ class GameManager {
       return { success: false, message: 'Game not found' };
     }
 
-    gameState.setStatements(statements.statements, statements.lieIndex);
+    // Shuffle statements to prevent pattern recognition
+    const shuffledData = this.shuffleStatements(statements.statements, statements.lieIndex);
+    gameState.setStatements(shuffledData.statements, shuffledData.lieIndex);
     return { success: true, gameState };
+  }
+
+  shuffleStatements(statements, originalLieIndex) {
+    const shuffled = [...statements];
+    const lieStatement = statements[originalLieIndex];
+    
+    // Fisher-Yates shuffle
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    // Find new lie index after shuffle
+    const newLieIndex = shuffled.indexOf(lieStatement);
+    return { statements: shuffled, lieIndex: newLieIndex };
   }
 
   submitGuess(roomId, playerId, guess, room) {
@@ -69,8 +86,20 @@ class GameManager {
       gameState,
       roundComplete,
       gameComplete,
-      finalScores: gameComplete ? room.getActivePlayers().sort((a, b) => b.score - a.score) : null
+      finalScores: gameComplete ? this.getFinalScores(room) : null
     };
+  }
+
+  getFinalScores(room) {
+    return room.getActivePlayers()
+      .sort((a, b) => b.score - a.score)
+      .map((player, index) => ({
+        rank: index + 1,
+        username: player.username,
+        score: player.score,
+        isWinner: index < 3 // Top 3 are winners
+      }));
+  }
   }
 
   getGameState(roomId) {
@@ -105,6 +134,30 @@ class GameManager {
         success: true,
         gameState: newGameState,
         gameComplete: false
+      };
+    }
+  }
+
+  nextRound(roomId, room) {
+    room.currentRound++;
+    const activePlayers = room.getActivePlayers();
+    
+    if (room.currentRound >= activePlayers.length) {
+      // Game complete
+      room.status = 'finished';
+      this.activeGames.delete(roomId);
+      return {
+        gameComplete: true,
+        finalScores: this.getFinalScores(room)
+      };
+    } else {
+      // Next round
+      const newGameState = new GameState(room);
+      this.activeGames.set(roomId, newGameState);
+      room.gameState = newGameState;
+      return {
+        gameComplete: false,
+        gameState: newGameState
       };
     }
   }

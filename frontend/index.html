@@ -244,7 +244,7 @@
                         </div>
                         <div class="text-center">
                             <button id="submit-statements-btn" class="btn btn-primary btn-lg">
-                                <i class="fas fa-paper-plane me-2"></i>Kirim Pernyataan
+                                <i class="fas fa-mask me-2"></i>Kirim Kebohonganmu! 😈
                             </button>
                         </div>
                     </div>
@@ -281,6 +281,13 @@
                         <i class="fas fa-medal me-2 text-warning"></i>Ranking
                     </h3>
                     <div id="scores-list"></div>
+                    
+                    <!-- Exit Game Button -->
+                    <div class="text-center mt-4">
+                        <button id="exit-game-btn" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-sign-out-alt me-2"></i>Keluar dari Permainan
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -288,10 +295,58 @@
 
     <!-- Halaman Final -->
     <div id="final-page" class="page">
-        <div class="container">
-            <h2>Permainan Selesai!</h2>
-            <div id="final-scores"></div>
-            <button id="back-to-rooms-btn">Kembali ke Room</button>
+        <div class="hero-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="winners-container">
+                            <div class="text-center mb-5">
+                                <i class="fas fa-trophy fa-4x text-warning mb-3"></i>
+                                <h1 class="display-4 text-white mb-2">🎉 Permainan Selesai! 🎉</h1>
+                                <p class="lead text-light">Selamat kepada para pemenang!</p>
+                            </div>
+                            
+                            <div class="winners-podium mb-5">
+                                <div id="final-scores"></div>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button id="back-to-rooms-btn" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-door-open me-2"></i>Kembali ke Room
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exit Game Confirmation Modal -->
+    <div class="modal fade" id="exitGameModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Keluar dari Permainan
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-warning me-2"></i>
+                        <strong>Peringatan!</strong> Jika Anda keluar sekarang, Anda tidak bisa masuk lagi ke permainan yang sedang berlangsung.
+                    </div>
+                    <p>Apakah Anda yakin ingin keluar dari permainan?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Tetap di Permainan
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirm-exit-game">
+                        <i class="fas fa-sign-out-alt me-2"></i>Ya, Keluar
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

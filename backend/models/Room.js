@@ -23,6 +23,14 @@ class Room {
       return { success: false, message: 'Game already started' };
     }
 
+    // Check for duplicate username (case-insensitive)
+    const existingPlayer = this.players.find(p => 
+      p.username.toLowerCase() === username.toLowerCase() && !p.isSuperAdmin
+    );
+    if (existingPlayer && !isSuperAdmin) {
+      return { success: false, message: 'Username sudah digunakan di room ini' };
+    }
+
     const player = new Player(socketId, username, false, isSuperAdmin);
     this.players.push(player);
     return { success: true, player };
@@ -34,11 +42,13 @@ class Room {
       const removedPlayer = this.players[index];
       this.players.splice(index, 1);
       
-      // If the removed player was the host, assign host to next non-superadmin player
+      // If the removed player was the host, assign host to the last non-superadmin player
       if (removedPlayer.isHost && this.players.length > 0) {
-        const nextHost = this.players.find(p => !p.isSuperAdmin);
-        if (nextHost) {
-          nextHost.isHost = true;
+        const activePlayers = this.players.filter(p => !p.isSuperAdmin);
+        if (activePlayers.length > 0) {
+          // Make the last active player the new host
+          const lastPlayer = activePlayers[activePlayers.length - 1];
+          lastPlayer.isHost = true;
         }
       }
       
