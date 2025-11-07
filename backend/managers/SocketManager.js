@@ -118,28 +118,10 @@ class SocketManager {
           if (result.roundComplete) {
             // Show results immediately when all players have guessed
             this.io.to(data.roomId).emit('round-complete', result.gameState);
-            
-            // After 10 seconds, move to next player
-            setTimeout(() => {
-              const room = this.roomManager.getRoom(data.roomId);
-              if (room) {
-                const gameResult = this.gameManager.nextRound(data.roomId, room);
-                if (gameResult.gameComplete) {
-                  this.io.to(data.roomId).emit('game-complete', gameResult.finalScores);
-                  // Mark room as finished - will be cleaned up when players leave
-                  room.status = 'finished';
-                } else {
-                  // Move to next player
-                  this.io.to(data.roomId).emit('next-player', gameResult.gameState);
-                }
-              }
-            }, 10000);
           }
         }
       }
     });
-
-
 
     socket.on('get-rooms', () => {
       socket.emit('rooms-list', this.roomManager.getAvailableRooms());
@@ -227,6 +209,19 @@ class SocketManager {
         socket.emit('left-game-confirmed');
         // Update room list for all clients
         this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
+      }
+    });
+
+    socket.on('force-next-player', (data) => {
+      const room = this.roomManager.getRoom(data.roomId);
+      if (room && room.status === 'playing') {
+        const gameResult = this.gameManager.nextRound(data.roomId, room);
+        if (gameResult.gameComplete) {
+          this.io.to(data.roomId).emit('game-complete', gameResult.finalScores);
+          room.status = 'finished';
+        } else {
+          this.io.to(data.roomId).emit('next-player', gameResult.gameState);
+        }
       }
     });
 

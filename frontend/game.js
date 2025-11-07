@@ -684,6 +684,10 @@ class GameClient {
             
             if (timeLeft <= 0) {
                 clearInterval(countdown);
+                // Force move to next player if countdown reaches 0
+                if (this.currentRoom && this.gameState) {
+                    this.socket.emit('force-next-player', { roomId: this.currentRoom.id });
+                }
             }
         }, 1000);
     }

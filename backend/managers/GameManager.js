@@ -35,6 +35,7 @@ class GameManager {
     const player = room.getPlayer(gameState.currentPlayer.id);
     if (player) {
       player.hasPlayed = true;
+      console.log(`Player ${player.username} marked as hasPlayed = true`);
     }
 
     // Shuffle statements to prevent pattern recognition
@@ -140,30 +141,14 @@ class GameManager {
       return { success: false, message: 'Game not found' };
     }
 
-    // Move to next round
-    room.currentRound++;
-    const activePlayers = room.getActivePlayers();
-    
-    if (room.currentRound >= activePlayers.length) {
-      // Game complete
-      room.status = ROOM_STATUS.FINISHED;
-      this.activeGames.delete(roomId);
-      return {
-        success: true,
-        gameComplete: true,
-        finalScores: activePlayers.sort((a, b) => b.score - a.score)
-      };
-    } else {
-      // Next round
-      const newGameState = new GameState(room);
-      this.activeGames.set(roomId, newGameState);
-      room.gameState = newGameState;
-      return {
-        success: true,
-        gameState: newGameState,
-        gameComplete: false
-      };
+    // Mark current player as having played (skipped)
+    const player = room.getPlayer(gameState.currentPlayer.id);
+    if (player) {
+      player.hasPlayed = true;
+      console.log(`Player ${player.username} skipped and marked as hasPlayed = true`);
     }
+
+    return this.nextRound(roomId, room);
   }
 
   nextRound(roomId, room) {
@@ -172,6 +157,7 @@ class GameManager {
     
     // Check if all players have played
     const unplayedPlayers = activePlayers.filter(p => !p.hasPlayed);
+    console.log('NextRound - Unplayed players:', unplayedPlayers.map(p => p.username));
     
     if (unplayedPlayers.length === 0) {
       // Game complete - all players have had their turn
