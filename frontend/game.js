@@ -242,6 +242,12 @@ class GameClient {
 
         this.socket.on('round-complete', (gameState) => {
             this.gameState = gameState;
+            // Clear any existing timers
+            if (this.countdownTimer) {
+                clearInterval(this.countdownTimer);
+                this.countdownTimer = null;
+            }
+            this.isCountdownRunning = false;
             this.showRoundResults();
         });
 

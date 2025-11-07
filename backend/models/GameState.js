@@ -30,7 +30,9 @@ class GameState {
       };
     }
     
-    this.round = room.currentRound + 1;
+    // Fix round calculation
+    const playedCount = activePlayers.filter(p => p.hasPlayed).length;
+    this.round = playedCount + 1;
     this.totalRounds = activePlayers.length;
     this.players = room.getPlayersData();
     this.statements = null;
