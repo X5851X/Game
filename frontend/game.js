@@ -242,7 +242,7 @@ class GameClient {
 
         this.socket.on('round-complete', (gameState) => {
             this.gameState = gameState;
-            // Clear any existing timers
+            // Clear all existing timers
             if (this.countdownTimer) {
                 clearInterval(this.countdownTimer);
                 this.countdownTimer = null;
@@ -251,13 +251,17 @@ class GameClient {
                 clearInterval(this.guessingTimer);
                 this.guessingTimer = null;
             }
+            if (this.writingTimer) {
+                clearInterval(this.writingTimer);
+                this.writingTimer = null;
+            }
             this.isCountdownRunning = false;
             this.showRoundResults();
         });
 
         this.socket.on('next-player', (gameState) => {
             this.gameState = gameState;
-            // Clear any existing timers to prevent conflicts
+            // Clear all existing timers to prevent conflicts
             if (this.timer) {
                 clearInterval(this.timer);
                 this.timer = null;
@@ -265,6 +269,14 @@ class GameClient {
             if (this.countdownTimer) {
                 clearInterval(this.countdownTimer);
                 this.countdownTimer = null;
+            }
+            if (this.guessingTimer) {
+                clearInterval(this.guessingTimer);
+                this.guessingTimer = null;
+            }
+            if (this.writingTimer) {
+                clearInterval(this.writingTimer);
+                this.writingTimer = null;
             }
             this.isCountdownRunning = false;
             console.log('Next player:', gameState.currentPlayer.username);
@@ -530,7 +542,7 @@ class GameClient {
             if (isCurrentPlayer && !isSuperAdmin) {
                 document.getElementById('writing-phase').classList.add('active');
                 document.getElementById('writing-title').textContent = 'Giliran Anda Menulis!';
-                this.startTimer(300); // Only show timer for current player
+                this.startWritingTimer(300); // 300 seconds for writing
             } else {
                 document.getElementById('waiting-phase').classList.add('active');
                 // Hide timer for waiting players
@@ -541,11 +553,14 @@ class GameClient {
             }
         } else if (phase === 'guessing') {
             this.showGuessingPhase();
-            this.startGuessingTimer(45); // Start 45-second guessing timer
-            // Show timer for guessing phase
-            const timerElement = document.getElementById('timer');
-            if (timerElement) {
-                timerElement.style.display = 'block';
+            if (!isCurrentPlayer && !isSuperAdmin) {
+                this.startGuessingTimer(45); // Only show timer for players who need to guess
+            } else {
+                // Hide timer for current player (they don't guess their own statements)
+                const timerElement = document.getElementById('timer');
+                if (timerElement) {
+                    timerElement.style.display = 'none';
+                }
             }
         }
 
@@ -596,14 +611,17 @@ class GameClient {
         if (isCurrentPlayer && !isSuperAdmin) {
             document.getElementById('guessing-title').textContent = 
                 'Pernyataan Anda sedang ditebak oleh pemain lain!';
-        } else {
+        } else if (!isSuperAdmin) {
             document.getElementById('guessing-title').textContent = 
                 `Tebak mana yang bohong dari ${this.gameState.currentPlayer.username}!`;
+        } else {
+            document.getElementById('guessing-title').textContent = 
+                `[Admin] Mengamati: ${this.gameState.currentPlayer.username}`;
         }
 
         const statementsContainer = document.getElementById('statements-to-guess');
         statementsContainer.innerHTML = this.gameState.statements.statements.map((statement, index) => `
-            <div class="guess-option ${isCurrentPlayer && !isSuperAdmin ? 'disabled' : ''}" 
+            <div class="guess-option ${isCurrentPlayer || isSuperAdmin ? 'disabled' : ''}" 
                  ${!isCurrentPlayer && !isSuperAdmin ? `onclick="gameClient.selectGuess(${index})"` : ''}>
                 <div class="statement-text">${statement}</div>
                 <div class="guess-indicator" style="display: none;">
@@ -719,6 +737,11 @@ class GameClient {
             timeLeft--;
             if (countdownElement) {
                 countdownElement.textContent = Math.max(0, timeLeft);
+                // Add visual feedback for countdown
+                if (timeLeft <= 3) {
+                    countdownElement.parentElement.style.background = 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+                    countdownElement.parentElement.style.borderColor = '#ef4444';
+                }
             }
             
             if (timeLeft <= 0) {
@@ -960,6 +983,38 @@ class GameClient {
         }, 1000);
     }
 
+    startWritingTimer(seconds) {
+        // Clear any existing writing timer
+        if (this.writingTimer) {
+            clearInterval(this.writingTimer);
+            this.writingTimer = null;
+        }
+        
+        let timeLeft = seconds;
+        const timerElement = document.getElementById('timer');
+        
+        if (timerElement) {
+            timerElement.style.display = 'block';
+            timerElement.textContent = timeLeft;
+        }
+        
+        this.writingTimer = setInterval(() => {
+            timeLeft--;
+            if (timerElement) {
+                timerElement.textContent = timeLeft;
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(this.writingTimer);
+                this.writingTimer = null;
+                if (timerElement) {
+                    timerElement.textContent = '0';
+                }
+                console.log('Writing timer finished');
+            }
+        }, 1000);
+    }
+
     startGuessingTimer(seconds) {
         // Clear any existing guessing timer
         if (this.guessingTimer) {
@@ -987,7 +1042,6 @@ class GameClient {
                 if (timerElement) {
                     timerElement.textContent = '0';
                 }
-                // Timer finished - results will be shown by server's timeout
                 console.log('Guessing timer finished, waiting for server results');
             }
         }, 1000);

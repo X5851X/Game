@@ -90,10 +90,25 @@ class SocketManager {
       if (result.success) {
         this.io.to(data.roomId).emit('statements-ready', result.gameState);
         
-        // Auto-timeout after 45 seconds if not all players have guessed
+        // Auto-timeout after 45 seconds - penalize players who didn't guess
         setTimeout(() => {
           const currentRoom = this.roomManager.getRoom(data.roomId);
           if (currentRoom && currentRoom.gameState && currentRoom.gameState.phase === 'guessing') {
+            // Penalize players who didn't guess with -5 points
+            const activePlayers = currentRoom.getActivePlayers();
+            const currentPlayerId = currentRoom.gameState.currentPlayer.id;
+            const playersWhoShouldGuess = activePlayers.filter(p => p.id !== currentPlayerId);
+            
+            playersWhoShouldGuess.forEach(player => {
+              if (!currentRoom.gameState.guesses.has(player.id)) {
+                // Player didn't guess - give -5 points
+                player.addScore(-5);
+                currentRoom.gameState.guesses.set(player.id, { guess: -1, points: -5, timeLeft: 0 });
+              }
+            });
+            
+            // Update gameState with current room data
+            currentRoom.gameState.players = currentRoom.getPlayersData();
             this.io.to(data.roomId).emit('round-complete', currentRoom.gameState);
           }
         }, 45000);
