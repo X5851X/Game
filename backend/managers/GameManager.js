@@ -14,6 +14,7 @@ class GameManager {
 
     room.status = ROOM_STATUS.PLAYING;
     room.currentRound = 0;
+    room.lastActivity = new Date();
 
     const gameState = new GameState(room);
     this.activeGames.set(room.id, gameState);
@@ -28,6 +29,8 @@ class GameManager {
       return { success: false, message: 'Game not found' };
     }
 
+    room.lastActivity = new Date();
+    
     // Mark current player as having played
     const player = room.getPlayer(gameState.currentPlayer.id);
     if (player) {
@@ -81,6 +84,8 @@ class GameManager {
       return { success: false, message: 'Game not found' };
     }
 
+    room.lastActivity = new Date();
+    
     const points = gameState.addGuess(playerId, guess, gameState.timeLeft);
     const player = room.getPlayer(playerId);
     if (player) {

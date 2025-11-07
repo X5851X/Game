@@ -135,13 +135,7 @@ class GameClient {
 
         // Final page
         document.getElementById('back-to-rooms-btn').addEventListener('click', () => {
-            if (this.isSuperAdmin) {
-                this.showPage('admin-page');
-                this.loadAdminRooms();
-            } else {
-                this.showPage('room-page');
-                this.loadRooms();
-            }
+            this.leaveRoomAndCleanup();
         });
 
         // Admin page
@@ -298,6 +292,17 @@ class GameClient {
                 this.loadRooms();
             }
             this.showToast('Anda telah keluar dari permainan', 'info');
+        });
+
+        this.socket.on('room-cleanup-scheduled', (data) => {
+            this.showToast(`Room akan dihapus dalam ${data.seconds} detik`, 'info');
+        });
+
+        this.socket.on('room-deleted', () => {
+            if (this.currentRoom) {
+                this.showToast('Room telah dihapus', 'info');
+                this.leaveRoomAndCleanup();
+            }
         });
     }
 
@@ -773,26 +778,31 @@ class GameClient {
             html += '</div></div>';
         }
         
-        // Show other players
-        if (others.length > 0) {
-            html += '<div class="other-players-section">';
-            html += '<h4 class="text-center text-muted mb-3">Peringkat Lainnya</h4>';
-            html += '<div class="other-scores">';
+        // Show all players ranking (including top 3)
+        html += '<div class="other-players-section">';
+        html += '<h4 class="text-center mb-4"><i class="fas fa-list-ol me-2 text-primary"></i>Peringkat Lengkap</h4>';
+        html += '<div class="other-scores">';
+        
+        finalScores.forEach((player, index) => {
+            const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+            const isTopThree = index < 3;
+            const cardClass = isTopThree ? 'border-warning bg-light' : '';
             
-            others.forEach(player => {
-                html += `
-                    <div class="other-score-item d-flex justify-content-between align-items-center p-3 mb-2 bg-light rounded">
+            html += `
+                <div class="other-score-item d-flex justify-content-between align-items-center p-3 mb-2 rounded ${cardClass}">
+                    <div class="d-flex align-items-center">
+                        <span class="rank-badge me-3" style="font-size: 1.2rem; min-width: 40px; text-align: center;">${rankIcon}</span>
                         <div>
-                            <span class="rank-badge badge bg-secondary me-2">#${player.rank}</span>
-                            <span class="player-name">${player.username}</span>
+                            <div class="player-name fw-bold">${player.username}</div>
+                            ${isTopThree ? '<small class="text-muted">🏆 Podium Finisher</small>' : ''}
                         </div>
-                        <span class="score text-muted">${player.score} pts</span>
                     </div>
-                `;
-            });
-            
-            html += '</div></div>';
-        }
+                    <span class="score fw-bold text-primary" style="font-size: 1.1rem;">${player.score} pts</span>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
         
         finalScoresContainer.innerHTML = html;
         
@@ -800,6 +810,11 @@ class GameClient {
         setTimeout(() => {
             this.showConfetti();
         }, 500);
+        
+        // Schedule room cleanup after 45 seconds
+        setTimeout(() => {
+            this.scheduleRoomCleanup();
+        }, 45000);
     }
 
     showConfetti() {
@@ -924,6 +939,33 @@ class GameClient {
         modal.hide();
         
         this.socket.emit('confirm-leave-game', { roomId: this.currentRoom?.id });
+    }
+
+    scheduleRoomCleanup() {
+        // Notify server to cleanup room after game ends
+        if (this.currentRoom) {
+            this.socket.emit('cleanup-room', { roomId: this.currentRoom.id });
+        }
+    }
+
+    leaveRoomAndCleanup() {
+        // Leave room and cleanup
+        if (this.currentRoom) {
+            this.socket.emit('leave-room', { roomId: this.currentRoom.id });
+            this.currentRoom = null;
+        }
+        
+        this.gameState = null;
+        
+        if (this.isSuperAdmin) {
+            this.showPage('admin-page');
+            this.loadAdminRooms();
+        } else {
+            this.showPage('room-page');
+            this.loadRooms();
+        }
+        
+        this.showToast('Terima kasih telah bermain!', 'success');
     }
 
     showToast(message, type = 'info') {

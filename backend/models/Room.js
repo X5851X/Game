@@ -12,6 +12,7 @@ class Room {
     this.currentPlayerIndex = 0;
     this.gameState = null;
     this.createdAt = new Date();
+    this.lastActivity = new Date();
   }
 
   addPlayer(socketId, username, isSuperAdmin = false) {
@@ -31,6 +32,7 @@ class Room {
       return { success: false, message: 'Username sudah digunakan di room ini' };
     }
 
+    this.lastActivity = new Date();
     const player = new Player(socketId, username, false, isSuperAdmin);
     this.players.push(player);
     return { success: true, player };

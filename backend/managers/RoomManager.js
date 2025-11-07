@@ -33,6 +33,9 @@ class RoomManager {
       return { success: false, message: 'Game sudah dimulai, tidak bisa join' };
     }
 
+    // Update room activity
+    room.lastActivity = new Date();
+    
     const result = room.addPlayer(socketId, username, isSuperAdmin);
     return result.success ? { success: true, room } : result;
   }
@@ -101,6 +104,28 @@ class RoomManager {
         }
       }
     }
+  }
+
+  cleanupInactiveRooms() {
+    const now = new Date();
+    const threeHours = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+    const deletedRooms = [];
+    
+    for (const [roomId, room] of this.rooms.entries()) {
+      const roomAge = now - room.createdAt;
+      const lastActivity = room.lastActivity || room.createdAt;
+      const inactiveTime = now - lastActivity;
+      
+      // Delete room if:
+      // 1. Room is older than 3 hours with no activity, OR
+      // 2. Room has been inactive for 3 hours
+      if (roomAge > threeHours && inactiveTime > threeHours) {
+        this.rooms.delete(roomId);
+        deletedRooms.push(roomId);
+      }
+    }
+    
+    return deletedRooms;
   }
 }
 

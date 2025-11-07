@@ -4,6 +4,19 @@ class SocketManager {
     this.roomManager = roomManager;
     this.gameManager = gameManager;
     this.playerSockets = new Map();
+    
+    // Start periodic cleanup for inactive rooms
+    this.startInactiveRoomCleanup();
+  }
+
+  startInactiveRoomCleanup() {
+    setInterval(() => {
+      const deletedRooms = this.roomManager.cleanupInactiveRooms();
+      if (deletedRooms.length > 0) {
+        // Update room list for all clients
+        this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
+      }
+    }, 300000); // Check every 5 minutes
   }
 
   handleConnection(socket) {
@@ -113,15 +126,8 @@ class SocketManager {
                 const gameResult = this.gameManager.nextRound(data.roomId, room);
                 if (gameResult.gameComplete) {
                   this.io.to(data.roomId).emit('game-complete', gameResult.finalScores);
-                  // Reset room status to waiting
-                  room.status = 'waiting';
-                  room.currentRound = 0;
-                  room.gameState = null;
-                  room.players.forEach(player => {
-                    if (!player.isSuperAdmin) {
-                      player.score = 0;
-                    }
-                  });
+                  // Mark room as finished - will be cleaned up when players leave
+                  room.status = 'finished';
                 } else {
                   // Move to next player
                   this.io.to(data.roomId).emit('next-player', gameResult.gameState);
@@ -173,6 +179,8 @@ class SocketManager {
             if (result.gameComplete) {
               setTimeout(() => {
                 this.io.to(data.roomId).emit('game-complete', result.finalScores);
+                // Mark room as finished
+                room.status = 'finished';
               }, 2000);
             }
           }
@@ -190,6 +198,11 @@ class SocketManager {
         // Only emit update if room still exists (not deleted)
         if (room) {
           this.io.to(roomId).emit('player-joined', room.getPlayersData());
+          
+          // If room is finished and no active players left, clean it up immediately
+          if (room.status === 'finished' && room.getActivePlayers().length === 0) {
+            this.roomManager.deleteRoom(roomId);
+          }
         }
         this.playerSockets.delete(socket.id);
         // Update room list for all clients
@@ -204,11 +217,60 @@ class SocketManager {
         const room = this.roomManager.removePlayerFromRooms(socket.id);
         if (room) {
           this.io.to(roomId).emit('player-joined', room.getPlayersData());
+          
+          // If room is finished and no active players left, clean it up immediately
+          if (room.status === 'finished' && room.getActivePlayers().length === 0) {
+            this.roomManager.deleteRoom(roomId);
+          }
         }
         this.playerSockets.delete(socket.id);
         socket.emit('left-game-confirmed');
         // Update room list for all clients
         this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
+      }
+    });
+
+    socket.on('cleanup-room', (data) => {
+      // Schedule room cleanup after game completion
+      const room = this.roomManager.getRoom(data.roomId);
+      if (room) {
+        // Mark room as finished and schedule cleanup
+        room.status = 'finished';
+        
+        // Notify players about upcoming cleanup
+        this.io.to(data.roomId).emit('room-cleanup-scheduled', { seconds: 60 });
+        
+        // Clean up room after 60 seconds to allow players to see results
+        setTimeout(() => {
+          const roomToCleanup = this.roomManager.getRoom(data.roomId);
+          if (roomToCleanup) {
+            // Notify players that room is being deleted
+            this.io.to(data.roomId).emit('room-deleted');
+            
+            // Remove all players from the room
+            const playerSocketIds = [];
+            for (const [socketId, roomId] of this.playerSockets.entries()) {
+              if (roomId === data.roomId) {
+                playerSocketIds.push(socketId);
+              }
+            }
+            
+            // Disconnect all players from the room
+            playerSocketIds.forEach(socketId => {
+              this.playerSockets.delete(socketId);
+              const playerSocket = this.io.sockets.sockets.get(socketId);
+              if (playerSocket) {
+                playerSocket.leave(data.roomId);
+              }
+            });
+            
+            // Delete the room
+            this.roomManager.deleteRoom(data.roomId);
+            
+            // Update room list for all clients
+            this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
+          }
+        }, 60000); // 60 seconds
       }
     });
 
@@ -224,6 +286,11 @@ class SocketManager {
       // Only emit update if room still exists (not deleted)
       if (room) {
         this.io.to(roomId).emit('player-joined', room.getPlayersData());
+        
+        // If room is finished and no active players left, clean it up immediately
+        if (room.status === 'finished' && room.getActivePlayers().length === 0) {
+          this.roomManager.deleteRoom(roomId);
+        }
       }
       this.playerSockets.delete(socketId);
       // Update room list for all clients
