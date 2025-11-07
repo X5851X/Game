@@ -96,20 +96,9 @@ class GameManager {
     // Update gameState with current room data
     gameState.players = room.getPlayersData();
 
-    const allGuessed = gameState.allPlayersGuessed(room);
-    let roundComplete = false;
-    let gameComplete = false;
-
-    if (allGuessed) {
-      roundComplete = true;
-      // Don't increment round here, do it in nextRound method
-    }
-
     return {
       success: true,
       gameState,
-      roundComplete,
-      gameComplete: false,
       pointsEarned: points,
       playerScore: player ? player.score : 0
     };

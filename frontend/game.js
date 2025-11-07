@@ -247,6 +247,10 @@ class GameClient {
                 clearInterval(this.countdownTimer);
                 this.countdownTimer = null;
             }
+            if (this.guessingTimer) {
+                clearInterval(this.guessingTimer);
+                this.guessingTimer = null;
+            }
             this.isCountdownRunning = false;
             this.showRoundResults();
         });
@@ -537,7 +541,7 @@ class GameClient {
             }
         } else if (phase === 'guessing') {
             this.showGuessingPhase();
-            this.startTimer(45); // Show 45-second timer for all during guessing
+            this.startGuessingTimer(45); // Start 45-second guessing timer
             // Show timer for guessing phase
             const timerElement = document.getElementById('timer');
             if (timerElement) {
@@ -952,6 +956,39 @@ class GameClient {
                 if (timerElement) {
                     timerElement.textContent = '0';
                 }
+            }
+        }, 1000);
+    }
+
+    startGuessingTimer(seconds) {
+        // Clear any existing guessing timer
+        if (this.guessingTimer) {
+            clearInterval(this.guessingTimer);
+            this.guessingTimer = null;
+        }
+        
+        let timeLeft = seconds;
+        const timerElement = document.getElementById('timer');
+        
+        if (timerElement) {
+            timerElement.style.display = 'block';
+            timerElement.textContent = timeLeft;
+        }
+        
+        this.guessingTimer = setInterval(() => {
+            timeLeft--;
+            if (timerElement) {
+                timerElement.textContent = timeLeft;
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(this.guessingTimer);
+                this.guessingTimer = null;
+                if (timerElement) {
+                    timerElement.textContent = '0';
+                }
+                // Timer finished - results will be shown by server's timeout
+                console.log('Guessing timer finished, waiting for server results');
             }
         }, 1000);
     }

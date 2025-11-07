@@ -115,10 +115,8 @@ class SocketManager {
           // Send updated game state to all players
           this.io.to(data.roomId).emit('guess-submitted', result.gameState);
           
-          if (result.roundComplete) {
-            // Show results immediately when all players have guessed
-            this.io.to(data.roomId).emit('round-complete', result.gameState);
-          }
+          // Don't show results immediately - wait for 45 second timer to complete
+          // Timer is already set in submit-statements event
         }
       }
     });
