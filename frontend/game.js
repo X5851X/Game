@@ -247,6 +247,11 @@ class GameClient {
 
         this.socket.on('next-player', (gameState) => {
             this.gameState = gameState;
+            // Clear any existing timers to prevent conflicts
+            if (this.timer) {
+                clearInterval(this.timer);
+                this.timer = null;
+            }
             this.updateGameState();
         });
 
@@ -680,14 +685,20 @@ class GameClient {
             countdownElement.textContent = timeLeft;
         }
         
-        const countdown = setInterval(() => {
+        // Clear any existing countdown
+        if (this.countdownTimer) {
+            clearInterval(this.countdownTimer);
+        }
+        
+        this.countdownTimer = setInterval(() => {
             timeLeft--;
             if (countdownElement) {
                 countdownElement.textContent = Math.max(0, timeLeft);
             }
             
             if (timeLeft <= 0) {
-                clearInterval(countdown);
+                clearInterval(this.countdownTimer);
+                this.countdownTimer = null;
                 console.log('Timer reached 0, forcing next player');
                 // Force move to next player if countdown reaches 0
                 if (this.currentRoom && this.gameState) {
