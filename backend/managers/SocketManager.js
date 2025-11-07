@@ -243,7 +243,6 @@ class SocketManager {
       const room = this.roomManager.removePlayerFromRooms(socketId);
       if (room) {
         this.io.to(roomId).emit('player-joined', room.getPlayersData());
-        // Check if room is empty after player disconnects
         if (room.players.length === 0) {
           this.roomManager.deleteRoom(roomId);
         }

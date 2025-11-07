@@ -157,12 +157,14 @@ class GameManager {
     
     // Check if all players have played
     const unplayedPlayers = activePlayers.filter(p => !p.hasPlayed);
-    console.log('NextRound - Unplayed players:', unplayedPlayers.map(p => p.username));
+    console.log(`NextRound - Room ${roomId}: ${unplayedPlayers.length} unplayed of ${activePlayers.length} total`);
+    console.log('Unplayed players:', unplayedPlayers.map(p => p.username));
     
     if (unplayedPlayers.length === 0) {
       // Game complete - all players have had their turn
       room.status = 'finished';
       this.activeGames.delete(roomId);
+      console.log(`Game complete for room ${roomId}`);
       return {
         gameComplete: true,
         finalScores: this.getFinalScores(room)
@@ -172,6 +174,7 @@ class GameManager {
       const newGameState = new GameState(room);
       this.activeGames.set(roomId, newGameState);
       room.gameState = newGameState;
+      console.log(`Next player selected: ${newGameState.currentPlayer.username}`);
       return {
         gameComplete: false,
         gameState: newGameState

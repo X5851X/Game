@@ -252,6 +252,12 @@ class GameClient {
                 clearInterval(this.timer);
                 this.timer = null;
             }
+            if (this.countdownTimer) {
+                clearInterval(this.countdownTimer);
+                this.countdownTimer = null;
+            }
+            this.isCountdownRunning = false;
+            console.log('Next player:', gameState.currentPlayer.username);
             this.updateGameState();
         });
 
@@ -688,7 +694,16 @@ class GameClient {
         // Clear any existing countdown
         if (this.countdownTimer) {
             clearInterval(this.countdownTimer);
+            this.countdownTimer = null;
         }
+        
+        // Prevent multiple timers for same room
+        if (this.isCountdownRunning) {
+            console.log('Countdown already running, skipping');
+            return;
+        }
+        
+        this.isCountdownRunning = true;
         
         this.countdownTimer = setInterval(() => {
             timeLeft--;
@@ -699,6 +714,7 @@ class GameClient {
             if (timeLeft <= 0) {
                 clearInterval(this.countdownTimer);
                 this.countdownTimer = null;
+                this.isCountdownRunning = false;
                 console.log('Timer reached 0, forcing next player');
                 // Force move to next player if countdown reaches 0
                 if (this.currentRoom && this.gameState) {
