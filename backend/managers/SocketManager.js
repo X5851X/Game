@@ -180,11 +180,6 @@ class SocketManager {
         // Only emit update if room still exists (not deleted)
         if (room) {
           this.io.to(roomId).emit('player-joined', room.getPlayersData());
-          
-          // If room is finished and no active players left, clean it up immediately
-          if (room.status === 'finished' && room.getActivePlayers().length === 0) {
-            this.roomManager.deleteRoom(roomId);
-          }
         }
         this.playerSockets.delete(socket.id);
         // Update room list for all clients
@@ -199,11 +194,6 @@ class SocketManager {
         const room = this.roomManager.removePlayerFromRooms(socket.id);
         if (room) {
           this.io.to(roomId).emit('player-joined', room.getPlayersData());
-          
-          // If room is finished and no active players left, clean it up immediately
-          if (room.status === 'finished' && room.getActivePlayers().length === 0) {
-            this.roomManager.deleteRoom(roomId);
-          }
         }
         this.playerSockets.delete(socket.id);
         socket.emit('left-game-confirmed');
@@ -215,13 +205,17 @@ class SocketManager {
     socket.on('force-next-player', (data) => {
       const room = this.roomManager.getRoom(data.roomId);
       if (room && room.status === 'playing') {
+        console.log('Force next player triggered for room:', data.roomId);
         const gameResult = this.gameManager.nextRound(data.roomId, room);
         if (gameResult.gameComplete) {
           this.io.to(data.roomId).emit('game-complete', gameResult.finalScores);
           room.status = 'finished';
         } else {
+          console.log('Moving to next player:', gameResult.gameState.currentPlayer.username);
           this.io.to(data.roomId).emit('next-player', gameResult.gameState);
         }
+      } else {
+        console.log('Room not found or not playing:', data.roomId, room?.status);
       }
     });
 

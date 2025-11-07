@@ -676,14 +676,19 @@ class GameClient {
         let timeLeft = 10;
         const countdownElement = document.getElementById('next-countdown');
         
+        if (countdownElement) {
+            countdownElement.textContent = timeLeft;
+        }
+        
         const countdown = setInterval(() => {
             timeLeft--;
             if (countdownElement) {
-                countdownElement.textContent = timeLeft;
+                countdownElement.textContent = Math.max(0, timeLeft);
             }
             
             if (timeLeft <= 0) {
                 clearInterval(countdown);
+                console.log('Timer reached 0, forcing next player');
                 // Force move to next player if countdown reaches 0
                 if (this.currentRoom && this.gameState) {
                     this.socket.emit('force-next-player', { roomId: this.currentRoom.id });
