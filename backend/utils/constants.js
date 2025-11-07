@@ -7,7 +7,8 @@ const POINTS = {
   FAST: 10,
   MEDIUM: 5,
   SLOW: 2,
-  TIMEOUT: 0
+  TIMEOUT: 0,
+  WRONG: -5
 };
 
 const ROOM_STATUS = {

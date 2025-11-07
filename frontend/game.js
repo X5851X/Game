@@ -231,6 +231,8 @@ class GameClient {
         this.socket.on('score-updated', (data) => {
             if (data.points > 0) {
                 this.showToast(`+${data.points} poin! Total: ${data.newScore}`, 'success');
+            } else if (data.points < 0) {
+                this.showToast(`${data.points} poin! Total: ${data.newScore}`, 'error');
             } else {
                 this.showToast('Tebakan salah! +0 poin', 'error');
             }

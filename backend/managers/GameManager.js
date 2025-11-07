@@ -116,12 +116,17 @@ class GameManager {
 
   getFinalScores(room) {
     return room.getActivePlayers()
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return a.username.localeCompare(b.username);
+      })
       .map((player, index) => ({
         rank: index + 1,
         username: player.username,
         score: player.score,
-        isWinner: index < 3 // Top 3 are winners
+        isWinner: index < 3
       }));
   }
 

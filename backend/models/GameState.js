@@ -50,9 +50,12 @@ class GameState {
   }
 
   addGuess(playerId, guess, timeLeft) {
+    const { POINTS } = require('../utils/constants');
     let points = 0;
     if (guess === this.statements.lieIndex) {
       points = calculatePoints(timeLeft, GUESSING_TIME);
+    } else {
+      points = POINTS.WRONG; // -5 points for wrong guess
     }
 
     this.guesses.set(playerId, { guess, points, timeLeft });
