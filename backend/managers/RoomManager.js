@@ -58,14 +58,7 @@ class RoomManager {
   removePlayerFromRooms(socketId) {
     for (const [roomId, room] of this.rooms.entries()) {
       if (room.removePlayer(socketId)) {
-        const activePlayers = room.getActivePlayers();
-        
-        // Only delete room if waiting and no players left
-        // Don't delete during active gameplay
-        if (activePlayers.length === 0 && room.status === ROOM_STATUS.WAITING) {
-          this.rooms.delete(roomId);
-          return null;
-        }
+        // Never auto-delete rooms - let them be cleaned up manually or by timeout
         return room;
       }
     }
@@ -89,18 +82,8 @@ class RoomManager {
   }
 
   cleanupEmptyRooms() {
-    for (const [roomId, room] of this.rooms.entries()) {
-      const activePlayers = room.getActivePlayers();
-      
-      // Delete room only if:
-      // 1. Game finished AND no active players, OR
-      // 2. Game waiting AND no active players
-      if (activePlayers.length === 0) {
-        if (room.status === ROOM_STATUS.FINISHED || room.status === ROOM_STATUS.WAITING) {
-          this.rooms.delete(roomId);
-        }
-      }
-    }
+    // Disabled - rooms will only be cleaned up by inactive room cleanup
+    return;
   }
 
   cleanupInactiveRooms() {

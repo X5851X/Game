@@ -177,12 +177,14 @@ class SocketManager {
       if (roomId) {
         socket.leave(roomId);
         const room = this.roomManager.removePlayerFromRooms(socket.id);
-        // Only emit update if room still exists (not deleted)
         if (room) {
           this.io.to(roomId).emit('player-joined', room.getPlayersData());
+          // Check if room is empty after player leaves
+          if (room.players.length === 0) {
+            this.roomManager.deleteRoom(roomId);
+          }
         }
         this.playerSockets.delete(socket.id);
-        // Update room list for all clients
         this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
       }
     });
@@ -194,10 +196,13 @@ class SocketManager {
         const room = this.roomManager.removePlayerFromRooms(socket.id);
         if (room) {
           this.io.to(roomId).emit('player-joined', room.getPlayersData());
+          // Check if room is empty after player leaves
+          if (room.players.length === 0) {
+            this.roomManager.deleteRoom(roomId);
+          }
         }
         this.playerSockets.delete(socket.id);
         socket.emit('left-game-confirmed');
-        // Update room list for all clients
         this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
       }
     });
@@ -219,47 +224,11 @@ class SocketManager {
       }
     });
 
-    socket.on('cleanup-room', (data) => {
-      // Schedule room cleanup after game completion
+    socket.on('exit-podium', (data) => {
       const room = this.roomManager.getRoom(data.roomId);
       if (room) {
-        // Mark room as finished and schedule cleanup
-        room.status = 'finished';
-        
-        // Notify players about upcoming cleanup
-        this.io.to(data.roomId).emit('room-cleanup-scheduled', { seconds: 60 });
-        
-        // Clean up room after 60 seconds to allow players to see results
-        setTimeout(() => {
-          const roomToCleanup = this.roomManager.getRoom(data.roomId);
-          if (roomToCleanup) {
-            // Notify players that room is being deleted
-            this.io.to(data.roomId).emit('room-deleted');
-            
-            // Remove all players from the room
-            const playerSocketIds = [];
-            for (const [socketId, roomId] of this.playerSockets.entries()) {
-              if (roomId === data.roomId) {
-                playerSocketIds.push(socketId);
-              }
-            }
-            
-            // Disconnect all players from the room
-            playerSocketIds.forEach(socketId => {
-              this.playerSockets.delete(socketId);
-              const playerSocket = this.io.sockets.sockets.get(socketId);
-              if (playerSocket) {
-                playerSocket.leave(data.roomId);
-              }
-            });
-            
-            // Delete the room
-            this.roomManager.deleteRoom(data.roomId);
-            
-            // Update room list for all clients
-            this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
-          }
-        }, 60000); // 60 seconds
+        this.roomManager.deleteRoom(data.roomId);
+        this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
       }
     });
 
@@ -272,17 +241,14 @@ class SocketManager {
     const roomId = this.playerSockets.get(socketId);
     if (roomId) {
       const room = this.roomManager.removePlayerFromRooms(socketId);
-      // Only emit update if room still exists (not deleted)
       if (room) {
         this.io.to(roomId).emit('player-joined', room.getPlayersData());
-        
-        // If room is finished and no active players left, clean it up immediately
-        if (room.status === 'finished' && room.getActivePlayers().length === 0) {
+        // Check if room is empty after player disconnects
+        if (room.players.length === 0) {
           this.roomManager.deleteRoom(roomId);
         }
       }
       this.playerSockets.delete(socketId);
-      // Update room list for all clients
       this.io.emit('room-list-updated', this.roomManager.getAvailableRooms());
     }
   }

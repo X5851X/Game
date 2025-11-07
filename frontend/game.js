@@ -973,6 +973,7 @@ class GameClient {
     leaveRoomAndCleanup() {
         // Leave room and cleanup
         if (this.currentRoom) {
+            this.socket.emit('exit-podium', { roomId: this.currentRoom.id });
             this.socket.emit('leave-room', { roomId: this.currentRoom.id });
             this.currentRoom = null;
         }
